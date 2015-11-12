@@ -2,6 +2,8 @@
 
 namespace Stripe;
 
+use Stripe\Util\EventDispatcher;
+
 class ApiRequestor
 {
     private $_apiKey;

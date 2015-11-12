@@ -1,6 +1,6 @@
 <?php
 
-namespace Stripe;
+namespace Stripe\Util;
 
 use Symfony\Component\EventDispatcher\Event;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;

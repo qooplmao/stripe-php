@@ -55,10 +55,18 @@ class ApiRequestor
         if (!$headers) {
             $headers = array();
         }
+        EventDispatcher::dispatchEvent(EventDispatcher::EVENT_PRE_REQUEST, array(
+            'method'    => $method,
+            'url'       => $url,
+            'params'    => $params,
+        ));
         list($rbody, $rcode, $rheaders, $myApiKey) =
         $this->_requestRaw($method, $url, $params, $headers);
         $json = $this->_interpretResponse($rbody, $rcode, $rheaders);
         $resp = new ApiResponse($rbody, $rcode, $rheaders, $json);
+        EventDispatcher::dispatchEvent(EventDispatcher::EVENT_POST_REQUEST, array(
+            'json'      => $json,
+        ));
         return array($resp, $myApiKey);
     }
 

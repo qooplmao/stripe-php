@@ -2,6 +2,7 @@
 
 namespace Stripe;
 
+use Stripe\Error\Base;
 use Stripe\Util\EventDispatcher;
 
 class ApiRequestor
@@ -62,12 +63,31 @@ class ApiRequestor
             'url'       => $url,
             'params'    => $params,
         ));
-        list($rbody, $rcode, $rheaders, $myApiKey) =
-        $this->_requestRaw($method, $url, $params, $headers);
-        $json = $this->_interpretResponse($rbody, $rcode, $rheaders);
+
+        try {
+            list($rbody, $rcode, $rheaders, $myApiKey) =
+            $this->_requestRaw($method, $url, $params, $headers);
+            $json = $this->_interpretResponse($rbody, $rcode, $rheaders);
+        } catch (Base $e) {
+            EventDispatcher::dispatchEvent(EventDispatcher::EVENT_POST_REQUEST, array('json' => array(
+                'message'       => $e->getMessage(),
+                'error'         => get_class($this),
+                'http_status'   => $e->getHttpStatus(),
+                'http_body'     => $e->getHttpBody(),
+                'json_body'     => $e->getJsonBody(),
+                'http_headers'  => $e->getHttpHeaders(),
+                'request_id'    => $e->getRequestId(),
+            )));
+
+            throw $e;
+        }
+
         $resp = new ApiResponse($rbody, $rcode, $rheaders, $json);
         EventDispatcher::dispatchEvent(EventDispatcher::EVENT_POST_REQUEST, array(
+            'body'      => $rbody,
+            'code'      => $rcode,
             'json'      => $json,
+            'headers'   => $rheaders,
         ));
         return array($resp, $myApiKey);
     }
@@ -217,7 +237,7 @@ class ApiRequestor
     {
         try {
             $resp = json_decode($rbody, true);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $msg = "Invalid response body from API: $rbody "
               . "(HTTP response code was $rcode)";
             throw new Error\Api($msg, $rcode, $rbody);
